@@ -2,211 +2,168 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>MNIST</title>
-<style type="text/css">
-  h5 {
-font: bold italic 2em/1em "Times New Roman", "MS Serif", "New York", serif;
-margin: 0;
-padding: 0;
-color: black;
-border-top: solid #e7ce00 medium;
-border-bottom: dotted #e7ce00 thin;
-width: 500px;
-}
-
-.btn {
-    border: none;
-    background-color: white;
-    padding: 14px 28px;
-    font-size: 16px;
-    cursor: pointer;
-    display: inline-block;
-}
-
-/* On mouse-over */
-.btn:hover {background: #eee;}
-
-
-</style>
-
- 
-<link rel="stylesheet" href="{% static 'api/css/style.css' %}" type="text/css" media="screen" title="no title" charset="utf-8">
-<link href="http://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
-<link href='http://fonts.googleapis.com/css?family=Merienda+One' rel='stylesheet' type='text/css'>
-
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.11.2"> </script>
+  <title>Digit Recognizer AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'api/css/style.css' %}" type="text/css" media="screen" title="no title" charset="utf-8">
 </head>
 <body>
+  <div class="background-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
 
+  <div class="container">
+    <header>
+      <h1>Digit Recognizer <span>AI</span></h1>
+      <p>Draw a digit (0-9) below and watch the neural network predict it in real-time.</p>
+    </header>
 
-<div class="row">
-  <div class="column">
-  	<h1 style="margin-top:30px" align="center">MNIST - Convolutional Neural Network</h1>
+    <div class="main-content">
+      <!-- Drawing Area -->
+      <div class="glass-panel canvas-panel">
+        <canvas width="400" height="400"></canvas>
+        <div class="actions">
+          <button id="clear" class="btn btn-secondary">Clear Canvas</button>
+          <button class="btn btn-primary" onclick="predict()">Predict Number</button>
+        </div>
+      </div>
 
-  	<div class="row">
+      <!-- Results Area -->
+      <div class="glass-panel results-panel">
+        <h2>Prediction Results</h2>
+        <div class="best-guess">
+          <p>Most Probable Digit:</p>
+          <div class="big-number" id="ans">?</div>
+        </div>
 
-  		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-	  	<button id="clear" class="button">Clear</button>
-	  	<button class="button" onclick="predict()">Predict</button>
+        <div class="feedback-section" id="feedback-section" style="display: none;">
+          <p>Was this correct?</p>
+          <div class="feedback-buttons">
+            <button class="btn-icon" onclick="feedbackCorrect()">👍</button>
+            <button class="btn-icon" onclick="feedbackIncorrect()">👎</button>
+          </div>
+          <div id="correction-form" style="display: none;">
+            <input type="number" id="correct-label" min="0" max="9" placeholder="Correct digit? (0-9)">
+            <button class="btn btn-primary btn-small" onclick="submitFeedback()">Teach Model</button>
+          </div>
+        </div>
 
-	  </div>
-    
-  	<canvas	width="400" height="400"></canvas>
+        <div class="probabilities">
+          <div class="prob-row"><span class="digit">0</span><div class="bar-container"><div class="bar" id="bar-0"></div></div><span class="pct" id="0">0%</span></div>
+          <div class="prob-row"><span class="digit">1</span><div class="bar-container"><div class="bar" id="bar-1"></div></div><span class="pct" id="1">0%</span></div>
+          <div class="prob-row"><span class="digit">2</span><div class="bar-container"><div class="bar" id="bar-2"></div></div><span class="pct" id="2">0%</span></div>
+          <div class="prob-row"><span class="digit">3</span><div class="bar-container"><div class="bar" id="bar-3"></div></div><span class="pct" id="3">0%</span></div>
+          <div class="prob-row"><span class="digit">4</span><div class="bar-container"><div class="bar" id="bar-4"></div></div><span class="pct" id="4">0%</span></div>
+          <div class="prob-row"><span class="digit">5</span><div class="bar-container"><div class="bar" id="bar-5"></div></div><span class="pct" id="5">0%</span></div>
+          <div class="prob-row"><span class="digit">6</span><div class="bar-container"><div class="bar" id="bar-6"></div></div><span class="pct" id="6">0%</span></div>
+          <div class="prob-row"><span class="digit">7</span><div class="bar-container"><div class="bar" id="bar-7"></div></div><span class="pct" id="7">0%</span></div>
+          <div class="prob-row"><span class="digit">8</span><div class="bar-container"><div class="bar" id="bar-8"></div></div><span class="pct" id="8">0%</span></div>
+          <div class="prob-row"><span class="digit">9</span><div class="bar-container"><div class="bar" id="bar-9"></div></div><span class="pct" id="9">0%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  	<div class="controls">
-  	<ul>
-  		<li class="selected" style="background-color: rgb(255, 255, 255);"></li>
-  	<li class="red"></li>
-  	<li class="blue"></li>
-  	<li class="yellow"></li>
-  	</ul>
- 
-  	</div>
-   </div>
+  <script src="{% static 'api/js/app.js'%}" type="text/javascript" charset="utf-8"></script>
+  <script type="text/javascript">
+    document.getElementById('clear').addEventListener('click', function () {
+      var canvas = document.querySelector('canvas');
+      var context = canvas.getContext('2d');
+      context.fillStyle = "black";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      document.getElementById("ans").innerHTML = "?";
+      document.getElementById("feedback-section").style.display = "none";
+      document.getElementById("correction-form").style.display = "none";
+      document.getElementById("correct-label").value = "";
+      for (let i = 0; i < 10; i++) {
+        document.getElementById(i).innerHTML = '0%';
+        document.getElementById('bar-' + i).style.width = '0%';
+        document.getElementById('bar-' + i).className = 'bar';
+      }
+    }, false);
 
+    function predict() {
+      var canvas = document.querySelector('canvas');
+      var dataURL = canvas.toDataURL('image/png');
 
-  <div class="column" >
-   	<h1 style="margin-top:30px" align="center">Output from Softmax Layer</h1>
-    <br><h5>Most Probable Answer : <span id="ans"></span> <mark><span id="ans" style="align:center;"></span></mark></h5><br>
+      fetch('/api/predict/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataURL })
+      })
+      .then(response => response.json())
+      .then(data => {
+        var best_index = data.prediction;
+        document.getElementById("ans").innerHTML = best_index;
+        
+        // Show feedback section
+        document.getElementById("feedback-section").style.display = "flex";
+        document.getElementById("correction-form").style.display = "none";
 
-   <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>0</button>
-        <span id="0" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-
-  <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>1</button>
-        <span id="1" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-    
-      <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>2</button>
-        <span id="2" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-    <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>3</button>
-        <span id="3" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-    <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>4</button>
-        <span id="4" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-    <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>5</button>
-        <span id="5" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-    <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>6</button>
-        <span id="6" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-    <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>7</button>
-        <span id="7" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-
-
-    <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>8</button>
-        <span id="8" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-
-  <div style="display: inline;">
-    <button style="display: inline-block;width: 70px;height: 60px;"><h1>9</button>
-        <span id="9" style="  font: 400 40px/1.2 'Merienda One', Helvetica, sans-serif;
-      color: rgba(0,0,0,0.7);
-      text-shadow: 3px 3px 3px #fff;"> </span></h1>
-  </div><br>
-
-
-    
-
-
-
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-<script src="{% static 'api/js/app.js'%}" type="text/javascript" charset="utf-8"></script>
-
-
-<script>
-  async function init() {
-    var path = "{% static "api/saved/model.json" %}";
-    console.log(path);
-         model = await tf.loadModel(path);
-        console.log("model loaded");
+        for (let i = 0; i < 10; i++) {
+          let percentage = data.probabilities[i];
+          document.getElementById(i).innerHTML = percentage + '%';
+          let bar = document.getElementById('bar-' + i);
+          bar.style.width = percentage + '%';
+          
+          if (i === best_index) {
+            bar.className = 'bar best';
+          } else {
+            bar.className = 'bar';
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error during prediction:', error);
+      });
     }
 
-    init();
-</script>
-<script type="text/javascript">
+    function feedbackCorrect() {
+      document.getElementById('feedback-section').style.display = 'none';
+    }
 
-  document.getElementById('clear').addEventListener('click', function() {
-        context.clearRect(0, 0,400 , 400);
-      }, false);
+    function feedbackIncorrect() {
+      document.getElementById('correction-form').style.display = 'flex';
+    }
 
+    function submitFeedback() {
+      var correctLabel = document.getElementById('correct-label').value.trim();
+      var predictedDigit = document.getElementById('ans').innerText.trim();
 
-function set(text){
-	document.getElementById("yo").innerHTML = text;
-}
+      if (correctLabel === '' || isNaN(correctLabel) || correctLabel < 0 || correctLabel > 9) {
+        alert("Please enter a valid digit between 0 and 9.");
+        return;
+      }
 
-function predict() {
-   
-   const imageData = context.getImageData(0, 0, 400, 400);
+      if (correctLabel === predictedDigit) {
+        alert(`You marked "${predictedDigit}" as incorrect. The correct digit cannot be the same as the prediction!`);
+        return;
+      }
+      
+      var canvas = document.querySelector('canvas');
+      var dataURL = canvas.toDataURL('image/png');
 
-   //convert to tensor
-   var tfImg = tf.fromPixels(imageData, 1);
-   //console.log(tfImg.shape);
-   //Resize the image
-   var smalImg = tf.image.resizeBilinear(tfImg, [28, 28]).reshape([1,28,28]);
-   
-   
-   smalImg = tf.cast(smalImg, 'float32');
-   var tensor = smalImg.expandDims(0);
-   tensor = tensor.div(tf.scalar(255));
-    
-   //tensor.append(null);
-    const prediction = model.predict(tensor);
-    const predictedValues = prediction.dataSync();
-    best = predictedValues[0];
-    best_index = 0;
-     for (index = 0; index < predictedValues.length; index++) {
-      if ( predictedValues[index] > best ) { best_index = index; best=predictedValues[index];}
-      x  = Math.round(predictedValues[index]*100);
-      document.getElementById(index).innerHTML = '-&nbsp;&nbsp;' + x + ' %';
-           
-    }   
-    console.log(best_index);
-    document.getElementById("ans").innerHTML  = best_index;
-    document.getElementById(best_index).innerHTML = '-&nbsp;&nbsp;&nbsp;' + "<mark>" +  
-    Math.round(predictedValues[best_index]*100) + '</mark> %';
-
-} 
-
-
-
-
-
-
-</script>
+      fetch('/api/feedback/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataURL, correct_label: correctLabel })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+            alert('Model updated! Thanks for teaching it.');
+            document.getElementById('clear').click(); // clear canvas
+        } else {
+            alert('Error updating model.');
+        }
+      })
+      .catch(error => {
+        console.error('Error during feedback submission:', error);
+      });
+    }
+  </script>
 </body>
 </html>
